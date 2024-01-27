@@ -1,0 +1,15 @@
+{
+  "domain": "e_st",
+  "name": "E-ST",
+  "documentation": "https://your.documentation.url",
+  "dependencies": [],
+  "codeowners": ["@codebygs"],
+  "requirements": [],
+  "config_flow": true,
+  "zeroconf": ["_e-st._tcp.local."],
+  "config": {
+    "email": {"name": "Email", "required": true},
+    "password": {"name": "Password", "required": true}
+  },
+  "version": "0.1.0"
+}
