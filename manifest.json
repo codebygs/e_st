@@ -1,15 +1,21 @@
 {
-  "domain": "e_st",
+  "domain": "est",
   "name": "E-ST",
-  "documentation": "https://your.documentation.url",
-  "dependencies": [],
-  "codeowners": ["@codebygs"],
-  "requirements": [],
+  "codeowners": [
+    "@codebygs"
+  ],
   "config_flow": true,
-  "zeroconf": ["_e-st._tcp.local."],
-  "config": {
-    "email": {"name": "Email", "required": true},
-    "password": {"name": "Password", "required": true}
-  },
-  "version": "0.1.0"
+  "dependencies": [],
+  "documentation": "https://github.com/codebygs/e-st-ha",
+  "homekit": {},
+  "iot_class": "cloud_polling",
+  "requirements": [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.2",
+    "lxml>=4.9.3"
+  ],
+  "single_config_entry": false,
+  "ssdp": [],
+  "version": "0.1.0",
+  "zeroconf": []
 }

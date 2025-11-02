@@ -1,0 +1,40 @@
+{
+  "config": {
+    "title": "E-ST Integration",
+    "abort": {
+      "already_configured": "Account is already configured",
+      "reconfigure_successful": "Reconfiguration successful"
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "eic_mismatch": "EIC code missmatch, add seperate entry",
+      "unknown": "Unexpected error"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "password": "Password",
+          "username": "Username"
+        }
+      },
+      "reconfigure": {
+        "data": {
+          "password": "Password",
+          "username": "Username"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Scan Interval (hours)"
+        },
+        "description": "Amend your options.",
+        "title": "Example Integration Options"
+      }
+    }
+  }
+}

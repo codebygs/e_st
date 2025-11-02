@@ -1,37 +1,31 @@
-"""The E-ST integration."""
+"""The Integration E-ST integration."""
 
-import asyncio
+from __future__ import annotations
+
+from datetime import timedelta
 import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.event import async_track_time_interval
 
-# The domain of your integration. Should be equal to the name of your integration directory.
-DOMAIN = "e_st"
+from .updater import Updater
+from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
 
-# List of platforms that you want to support.
-PLATFORMS = ["sensor"]
-
-# Logger
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup(hass: HomeAssistant, config: dict):
-    """Set up the E-ST integration."""
-    # Nothing to set up here, configuration is done via config flow.
-    return True
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Set up E-ST Integration from a config entry."""
+    
+    poll_interval = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    updater = Updater(hass, config_entry)
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Set up E-ST from a config entry."""
-    # Forward the setup to the sensor platform.
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
-    return True
+    hass.async_create_task(updater.async_update())
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
-    """Unload E-ST config entry."""
-    # Unload entities for this entry.
-    await asyncio.gather(
-        *[hass.config_entries.async_forward_entry_unload(entry, platform) for platform in PLATFORMS]
-    )
+    # Set up daily update
+    async def update_callback(_):
+        await updater.async_update()
+
+    async_track_time_interval(hass, update_callback, timedelta(hours=poll_interval))
+
     return True

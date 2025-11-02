@@ -1,62 +1,178 @@
-from homeassistant import config_entries
+"""Config flow for Integration 101 Template integration."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
 import voluptuous as vol
 
-DOMAIN = 'e_st'
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required('email'): str,
-        vol.Required('password'): str
-    })
-}, extra=vol.ALLOW_EXTRA)
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError
 
-async def async_validate_input(hass, data):
-    """Validate that the provided data is valid."""
-    # You can add custom validation logic here if needed
-    return {'title': 'E-ST Configuration'}
+from .api import Api, ApiAuthException, ApiException
+from .const import CONF_EMAIL, CONF_PASSWORD, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
 
-async def async_setup(hass, config):
-    """Set up the E-ST integration."""
-    return True
+_LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, entry):
-    """Set up E-ST from a config entry."""
-    # Set up the integration based on the config entry
-    return True
+STEP_USER_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_EMAIL): str,
+        vol.Required(CONF_PASSWORD): str,
+    }
+)
 
-async def async_unload_entry(hass, entry):
-    """Unload a config entry."""
-    # Unload resources associated with the entry
-    return True
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the user input allows us to connect.
 
-async def async_get_or_create_e_st(hass, config):
-    """Return the E-ST integration or create it if it doesn't exist."""
-    # You can add logic here to check if the integration already exists
-    return True
+    Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
+    """
+    api = Api(data[CONF_EMAIL], data[CONF_PASSWORD])
 
-class EStConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for E-ST."""
+    try:
+        customer_info = await hass.async_add_executor_job(api.authenticate)
+    except ApiAuthException as err:
+        raise InvalidAuth from err
+    except ApiException as err:
+        raise CannotConnect from err
+    
+    return {
+        "title": f"{customer_info.full_name} ({customer_info.eic_code})",
+        "eic_code": customer_info.eic_code,
+    }
 
-    async def async_step_user(self, user_input=None):
+
+class EstConfigFlow(ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for E-ST Integration."""
+
+    VERSION = 1
+    _input_data: dict[str, Any]
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry):
+        """Get the options flow for this handler."""
+        return EstOptionsFlowHandler(config_entry)
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
-        errors = {}
+        # Called when you initiate adding an integration via the UI
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            # Validate the input data
-            email = user_input['email']
-            password = user_input['password']
+            # The form has been filled in and submitted, so process the data provided.
+            try:
+                # Validate that the setup data is valid and if not handle errors.
+                # The errors["base"] values match the values in your strings.json and translation files.
+                info = await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
 
-            # You can perform additional validation here
+            if "base" not in errors:
+                # Validation was successful, so create a unique id for this instance of your integration
+                # and create the config entry.
+                await self.async_set_unique_id(info['eic_code'])
+                self._abort_if_unique_id_configured()
+                return self.async_create_entry(title=info["title"], data=user_input)
 
-            # Return the configured device
-            return self.async_create_entry(title='E-ST Configuration', data=user_input)
-
-        # Show the form to the user
+        # Show initial form.
         return self.async_show_form(
-            step_id='user',
-            data_schema=vol.Schema({
-                vol.Required('email'): str,
-                vol.Required('password'): vol.Secret(str),
-            }),
-            errors=errors
+            step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
         )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Add reconfigure step to allow to reconfigure a config entry."""
+        # This methid displays a reconfigure option in the integration and is
+        # different to options.
+        # It can be used to reconfigure any of the data submitted when first installed.
+        # This is optional and can be removed if you do not want to allow reconfiguration.
+        errors: dict[str, str] = {}
+        config_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+
+        if user_input is not None:
+            try:
+                info = await validate_input(self.hass, user_input)
+            except CannotConnect:
+                errors["base"] = "cannot_connect"
+            except InvalidAuth:
+                errors["base"] = "invalid_auth"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                if (info['eic_code'] != config_entry.unique_id):
+                    errors["base"] = "eic_mismatch"
+                else:
+                    return self.async_update_reload_and_abort(
+                        config_entry,
+                        unique_id=config_entry.unique_id,
+                        data={**config_entry.data, **user_input},
+                        reason="reconfigure_successful",
+                    )
+            
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_EMAIL, default=config_entry.data[CONF_EMAIL]
+                    ): str,
+                    vol.Required(CONF_PASSWORD): str,
+                }
+            ),
+            errors=errors,
+        )
+
+
+class EstOptionsFlowHandler(OptionsFlowWithReload):
+    """Handles the options flow."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.options = dict(config_entry.options)
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None):
+        """Handle options flow."""
+        if user_input is not None:
+            options = self.config_entry.options | user_input
+            return self.async_create_entry(title="", data=options)
+
+        # It is recommended to prepopulate options fields with default values if available.
+        # These will be the same default values you use on your coordinator for setting variable values
+        # if the option has not been set.
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_SCAN_INTERVAL,
+                    default=self.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+                ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=data_schema)
+
+
+class CannotConnect(HomeAssistantError):
+    """Error to indicate we cannot connect."""
+
+
+class InvalidAuth(HomeAssistantError):
+    """Error to indicate there is invalid auth."""
