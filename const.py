@@ -1,6 +1,6 @@
 """E-ST integration."""
 
-DOMAIN = "est"
+DOMAIN = "e_st"
 
 CONF_EMAIL = "email"
 CONF_PASSWORD = "password"

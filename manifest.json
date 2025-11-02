@@ -1,21 +1,17 @@
 {
-  "domain": "est",
+  "domain": "e_st",
   "name": "E-ST",
-  "codeowners": [
-    "@codebygs"
-  ],
+  "codeowners": ["@codebygs"],
   "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://github.com/codebygs/e-st-ha",
-  "homekit": {},
+  "dependencies": ["recorder"],
+  "documentation": "https://github.com/codebygs/e_st",
+  "loggers": ["custom_components.e_st"],
+  "integration_type": "service",
   "iot_class": "cloud_polling",
   "requirements": [
     "requests>=2.31.0",
     "beautifulsoup4>=4.12.2",
     "lxml>=4.9.3"
   ],
-  "single_config_entry": false,
-  "ssdp": [],
-  "version": "0.1.0",
-  "zeroconf": []
+  "version": "0.1.0"
 }

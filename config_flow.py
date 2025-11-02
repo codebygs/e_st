@@ -49,7 +49,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     }
 
 
-class EstConfigFlow(ConfigFlow, domain=DOMAIN):
+class ConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for E-ST Integration."""
 
     VERSION = 1
@@ -59,7 +59,7 @@ class EstConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry):
         """Get the options flow for this handler."""
-        return EstOptionsFlowHandler(config_entry)
+        return OptionsFlowHandler(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -142,7 +142,7 @@ class EstConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
 
-class EstOptionsFlowHandler(OptionsFlowWithReload):
+class OptionsFlowHandler(OptionsFlowWithReload):
     """Handles the options flow."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
