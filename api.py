@@ -32,10 +32,7 @@ class DataPoint(NamedTuple):
     timestamp: int
     value: float
 
-type Statistics = Dict[
-  [Direction.CONSUMED]: list[DataPoint],
-  [Direction.RETURNED]: list[DataPoint],
-]
+Statistics = Dict[Direction, list[DataPoint]]
 
 class ApiException(Exception):
     pass

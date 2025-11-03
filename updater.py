@@ -69,7 +69,7 @@ class Updater():
                 + timedelta(days=1))
             
             _LOGGER.info(
-                f"Interval - from: {start_date.strftime("%Y-%m-%d %H:%M:%S")}, to: {today_start.strftime("%Y-%m-%d %H:%M:%S")}, counter: {counter.id}"
+                f"Interval - from: {start_date.strftime('%Y-%m-%d %H:%M:%S')}, to: {today_start.strftime('%Y-%m-%d %H:%M:%S')}, counter: {counter.id}"
             )
 
             if start_date >= today_start:
@@ -128,7 +128,7 @@ class Updater():
             "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
         }
 
-        _LOGGER.info(f"Gathering stats for {metadata["statistic_id"]}")
+        _LOGGER.info(f"Gathering stats for {metadata['statistic_id']}")
 
         current_timestamp = last_timestamp
 
@@ -151,9 +151,9 @@ class Updater():
         last = stats[-1]
 
         if first:
-            _LOGGER.debug(f"Stats added - id: {metadata["statistic_id"]}, from: {first["start"].strftime("%Y-%m-%d %H:%M:%S")} {first["sum"]}, to: {last["start"].strftime("%Y-%m-%d %H:%M:%S")} {last["sum"]}")
+            _LOGGER.debug(f"Stats added - id: {metadata['statistic_id']}, from: {first['start'].strftime('%Y-%m-%d %H:%M:%S')} {first['sum']}, to: {last['start'].strftime('%Y-%m-%d %H:%M:%S')} {last['sum']}")
         else:
-            _LOGGER.debug(f"No satats added - id: {metadata["statistic_id"]}")
+            _LOGGER.debug(f"No satats added - id: {metadata['statistic_id']}")
 
         if (stats):
             async_add_external_statistics(self.hass, metadata, stats)
